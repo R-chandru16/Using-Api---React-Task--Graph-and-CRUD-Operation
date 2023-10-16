@@ -1,0 +1,36 @@
+import axios from 'axios';
+
+const API_URL = 'https://localhost:44355/api/User'; // Replace with your actual API URL
+
+// Function to get all users
+export async function getUsers() {
+  try {
+    const response = await axios.get(API_URL,user);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Function to add a new user
+export async function addUser(user) {
+  try {
+    const response = await axios.post(`${API_URL}/Login`, user);
+    return response.data; // Assuming the API returns the newly created user
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Function to update a user's data
+export async function updateUser(updatedUser) {
+  try {
+    const response = await axios.put(`${API_URL}/${updatedUser.id}`, updatedUser);
+    return response.data; // Assuming the API returns the updated user
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Add any other user-related functions here
+// For example, you can implement functions to delete users, fetch a single user by ID, etc.

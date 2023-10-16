@@ -1,0 +1,279 @@
+import React, { useState } from 'react';
+import { loginUser, loginAdmin, registerUser, registerAdmin } from '../Service/Userservice'; // Import functions from UserService.js
+
+const LoginPage: React.FC = () => {
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [role, setRole] = useState<string>('user'); // Default to 'user' role
+  const [name, setName] = useState<string>('');
+  const [status, setStatus] = useState<string>('');
+  const [isLogin, setIsLogin] = useState<boolean>(true); // Show login form by default
+
+  const handleLogin = async () => {
+    try {
+      if (role === 'admin') {
+        // Perform admin login
+        const adminResponse = await loginAdmin(email, password);
+        console.log('Admin login successful:', adminResponse);
+      } else {
+        // Perform user login
+        const userResponse = await loginUser(email, password);
+        console.log('User login successful:', userResponse);
+      }
+      // Redirect to the appropriate dashboard based on the role
+    } catch (error) {
+      console.error('Login error:', error);
+    }
+  };
+
+  const handleRegistration = async () => {
+    const userData = { email, password, name, status, role };
+    try {
+      if (role === 'admin') {
+        // Perform admin registration
+        const adminResponse = await registerAdmin(userData);
+        console.log('Admin registration successful:', adminResponse);
+      } else {
+        // Perform user registration
+        const userResponse = await registerUser(userData);
+        console.log('User registration successful:', userResponse);
+      }
+      // Switch to the login form after successful registration
+      setIsLogin(true);
+    } catch (error) {
+      console.error('Registration error:', error);
+    }
+  };
+
+  return (
+    <div>
+      {isLogin ? (
+        <div>
+          <h2>Login</h2>
+          <label>
+            Role:
+            <select value={role} onChange={(e) => setRole(e.target.value)}>
+              <option value="admin">Admin</option>
+              <option value="user">User</option>
+            </select>
+          </label>
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <button onClick={handleLogin}>Login</button>
+          <p>
+            Don't have an account?{' '}
+            <span onClick={() => setIsLogin(false)}>Register here</span>
+          </p>
+        </div>
+      ) : (
+        <div>
+          <h2>Register</h2>
+          <label>
+            Role:
+            <select value={role} onChange={(e) => setRole(e.target.value)}>
+              <option value="admin">Admin</option>
+              <option value="user">User</option>
+            </select>
+          </label>
+          <input
+            type="text"
+            placeholder="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <input
+            type="text"
+            placeholder="Status"
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+          />
+          <button onClick={handleRegistration}>Register</button>
+          <p>
+            Already have an account?{' '}
+            <span onClick={() => setIsLogin(true)}>Login here</span>
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default LoginPage;
+----------------
+
+import React, { useState, ChangeEvent, FormEvent } from 'react';
+import './loginpage.css';
+import { useNavigate } from 'react-router-dom';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { registerUser, loginUser } from '../Service/Userservice';
+
+interface LoginPageProps {
+  role: (role: string, data: any) => void;
+}
+
+const LoginPage: React.FC<LoginPageProps> = ({ role }) => {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    showLogin: true,
+    email: '',
+    password: '',
+    name: '',
+  });
+
+  const toggleForm = () => {
+    setFormData((prevState) => ({
+      ...prevState,
+      showLogin: !prevState.showLogin,
+      email: '',
+      password: '',
+    }));
+  };
+
+  const handleChangeInput = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prevState) => ({
+      ...prevState,
+      [name]: value,
+    }));
+  };
+
+  const handlingLoginAction = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const { email, password } = formData;
+
+    try {
+      const user = await loginUser(email, password);
+
+      if (user.role === 'Admin' || user.role === 'admin') {
+        role(user.role, user);
+        navigate('/LaunchPage');
+      } else {
+        // Fetch user data for departments and roles
+        const userDataResponse = await fetch('api/User/Login');
+        const userData = await userDataResponse.json();
+        role(user.role, userData);
+        navigate('/LaunchPage');
+      }
+    } catch (error) {
+      console.error(error);
+      // Handle error, e.g., display an error toast
+      toast.error('Login failed. Please check your credentials.');
+    }
+  };
+
+  const handlingSignupAction = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const { name, email, password } = formData;
+
+    // Create a new user object for signup
+    const newUser = {
+      name,
+      email,
+      password,
+    };
+
+    try {
+      const user = await registerUser(newUser);
+
+      role(user.role, user);
+      navigate('/LaunchPage');
+    } catch (error) {
+    
+      // Handle error, e.g., display an error toast
+      toast.error('Signup failed. Please try again.');
+    }
+  };
+
+  const { showLogin, email, password, name } = formData;
+
+  return (
+    <>
+      {/* Toast Container */}
+      <ToastContainer />
+
+      <div className="navbar">
+        <header className="header">
+          <h3>DEVELOPER TASK</h3>
+        </header>
+      </div>
+      <div className='container-body'>
+        <div className='container'>
+          <h2>{showLogin ? 'Login' : 'Signup'}</h2>
+          <form onSubmit={showLogin ? handlingLoginAction : handlingSignupAction}>
+            {!showLogin && (
+              <div className='form-group'>
+                <label htmlFor='name'>Name</label>
+                <input
+                  type='text'
+                  id='name'
+                  name='name'
+                  value={name}
+                  onChange={handleChangeInput}
+                  placeholder='Name'
+                  required
+                />
+              </div>
+            )}
+            <div className='form-group'>
+              <label htmlFor='email'>Email</label>
+              <input
+                type='email'
+                id='email'
+                name='email'
+                value={email}
+                onChange={handleChangeInput}
+                placeholder='Email'
+                required
+              />
+            </div>
+            <div className='form-group'>
+              <label htmlFor='password'>Password</label>
+              <input
+                type='password'
+                id='password'
+                name='password'
+                value={password}
+                onChange={handleChangeInput}
+                placeholder='Password'
+                required
+              />
+            </div>
+            <div className='button-container'>
+              <button type='submit' className='submit-button'>
+                {showLogin ? 'Login' : 'Signup'}
+              </button>
+              <button type='button' onClick={toggleForm} className='toggle-button'>
+                {showLogin ? 'Switch to Signup' : 'Switch to Login'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </>
+  );
+};
+
+export default LoginPage;
